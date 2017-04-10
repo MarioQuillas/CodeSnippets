@@ -416,11 +416,15 @@
     <Compile Include="Linq\CategoryTheory\Monad.Try.cs" />
     <Compile Include="Linq\CategoryTheory\Optional`1.cs" />
     <Compile Include="Linq\CSharp\AsyncFunction.cs" />
+    <Compile Include="Linq\CSharp\BinaryArithmeticExpressionVisitor.cs" />
+    <Compile Include="Linq\CSharp\CompiledExpressionTree.cs" />
     <Compile Include="Linq\CSharp\Composition.cs" />
     <Compile Include="Linq\CSharp\Curry.cs" />
     <Compile Include="Linq\CSharp\FluentApi.cs" />
     <Compile Include="Linq\CSharp\Immutability.cs" />
     <Compile Include="Linq\CSharp\PatternMatching.cs" />
+    <Compile Include="Linq\CSharp\PrefixVisitor.cs" />
+    <Compile Include="Linq\CSharp\Product.cs" />
     <Compile Include="Linq\CSharp\Purity.cs" />
     <Compile Include="Linq\Lambda\ChurchAggregateList.Generic.cs" />
     <Compile Include="Linq\Lambda\ChurchNumeral.Generic.cs" />

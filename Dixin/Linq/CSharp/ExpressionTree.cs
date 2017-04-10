@@ -6,17 +6,16 @@
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using System.Runtime.CompilerServices;
 
-    internal class Product
+    internal static partial class ExpressionTree
     {
-        internal int ProductID { get; set; }
-
-        internal string Name { get; set; }
-
-        internal decimal ListPrice { get; set; }
-
-        internal int? ProductSubcategoryID { get; set; }
+        internal static void Prefix()
+        {
+            Expression<Func<double, double, double, double, double, double>> infix =
+                (a, b, c, d, e) => a + b - c * d / 2 + e * 3;
+            PrefixVisitor prefixVisitor = new PrefixVisitor();
+            string prefix = prefixVisitor.VisitBody(infix); // add(sub(add(a, b), div(mul(c, d), 2)), mul(e, 3))
+        }
     }
 
     internal static partial class ExpressionTree
@@ -88,44 +87,6 @@
         internal static void LinqToEntities(IQueryable<Product> source)
         {
             IQueryable<Product> query = source.Where(product => product.ListPrice > 0M); // Define query.
-            foreach (Product result in query) // Execute query.
-            {
-                Trace.WriteLine(result.Name);
-            }
-        }
-    }
-
-    internal static partial class CompiledExpressionTree
-    {
-        [CompilerGenerated]
-        private static Func<Product, bool> cachedPredicate;
-
-        [CompilerGenerated]
-        private static bool Predicate(Product product) => product.ListPrice > 0M;
-
-        public static void LinqToObjects(IEnumerable<Product> source)
-        {
-            Func<Product, bool> predicate = cachedPredicate ?? (cachedPredicate = Predicate);
-            IEnumerable<Product> query = Enumerable.Where(source, predicate);
-            foreach (Product result in query) // Execute query.
-            {
-                Trace.WriteLine(result.Name);
-            }
-        }
-    }
-
-    internal static partial class CompiledExpressionTree
-    {
-        internal static void LinqToEntities(IQueryable<Product> source)
-        {
-            ParameterExpression productParameter = Expression.Parameter(typeof(Product), "product");
-            Expression<Func<Product, bool>> predicateExpression = Expression.Lambda<Func<Product, bool>>(
-                Expression.GreaterThan(
-                    Expression.Property(productParameter, nameof(Product.ListPrice)),
-                    Expression.Constant(0M, typeof(decimal))),
-                productParameter);
-
-            IQueryable<Product> query = Queryable.Where(source, predicateExpression); // Define query.
             foreach (Product result in query) // Execute query.
             {
                 Trace.WriteLine(result.Name);
