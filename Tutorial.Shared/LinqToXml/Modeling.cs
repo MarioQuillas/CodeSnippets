@@ -13,7 +13,6 @@
     using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Net.Http;
     using System.Xml;
     using System.Xml.Linq;
 #endif
@@ -112,13 +111,16 @@
             isPermaLink.WriteLine(); // True
         }
 
-        internal static void Node()
+        internal static void DeepEquals()
         {
-            XDocument document = XDocument.Parse("<element></element>");
-            XElement element1 = new XElement("element", null); // <element />
-            XElement element2 = new XElement("element", string.Empty); // <element></element>
-            XNode.DeepEquals(document.Root, element1).WriteLine(); // False
-            XNode.DeepEquals(document.Root, element2).WriteLine(); // True
+            XElement element1 = XElement.Parse("<parent><child></child></parent>");
+            XElement element2 = new XElement("parent", new XElement("child")); // <parent><child /></parent>
+            object.ReferenceEquals(element1, element2).WriteLine(); // False
+            XNode.DeepEquals(element1, element2).WriteLine(); // True
+
+            XElement element3 = new XElement("parent", new XElement("child", string.Empty)); // <parent><child></child></parent>
+            object.ReferenceEquals(element1, element2).WriteLine(); // False
+            XNode.DeepEquals(element1, element3).WriteLine(); // False
         }
 
         internal static XDocument LoadXDocument(string uri)
@@ -237,25 +239,34 @@
             // </root>
         }
 
-        internal static void StreamingElement()
+        internal static void StreamingElementWithChildElements()
         {
-            Func<IEnumerable<XElement>> getChildElements = () => Enumerable
-                .Range(0, 5)
-                .Select(value => new XElement("child", value.WriteLine()));
+            IEnumerable<XElement> ChildElementsFactory() =>
+                Enumerable
+                    .Range(0, 5).Do(value => value.WriteLine())
+                    .Select(value => new XElement("child", value));
 
-            XElement immediate1 = new XElement("parent", getChildElements()); // 0 1 2 3 4.
+            XElement immediateParent = new XElement("parent", ChildElementsFactory()); // 0 1 2 3 4.
+            immediateParent.ToString(SaveOptions.DisableFormatting).WriteLine();
+            // <parent><child>0</child><child>1</child><child>2</child><child>3</child><child>4</child></parent>
 
-            XStreamingElement deferred1 = new XStreamingElement("parent", getChildElements());
-            deferred1.ToString(SaveOptions.DisableFormatting).WriteLine();
+            XStreamingElement deferredParent = new XStreamingElement("parent", ChildElementsFactory()); // Deferred.
+            deferredParent.ToString(SaveOptions.DisableFormatting).WriteLine();
             // 0 1 2 3 4 
             // <parent><child>0</child><child>1</child><child>2</child><child>3</child><child>4</child></parent>
+        }
 
-            XElement immediate2 = new XElement("parent", immediate1.Elements());
-            XStreamingElement deferred2 = new XStreamingElement("parent", immediate1.Elements());
-            immediate1.RemoveAll();
-            immediate2.ToString(SaveOptions.DisableFormatting).WriteLine();
-            // <parent><child>0</child><child>1</child><child>2</child><child>3</child><child>4</child></parent>
-            deferred2.WriteLine(); // <parent />
+        internal static void StreamingElementWithChildElementModification()
+        {
+            XElement source = new XElement("source", new XElement("child", "a"));
+            XElement child = source.Elements().Single();
+
+            XElement immediateParent = new XElement("parent", child);
+            XStreamingElement deferredParent = new XStreamingElement("parent", child); // Deferred.
+
+            child.Value = "b";
+            immediateParent.ToString(SaveOptions.DisableFormatting).WriteLine(); // <parent><child>a</child></parent>
+            deferredParent.ToString(SaveOptions.DisableFormatting).WriteLine(); // <parent><child>b</child></parent>
         }
     }
 }

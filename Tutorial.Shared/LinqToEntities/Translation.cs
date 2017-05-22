@@ -111,7 +111,7 @@
                 .GetPrimitiveTypes(DataSpace.CSpace)
                 .Single(type => type.ClrEquivalentType == typeof(string)));
             TypeUsage nameRowTypeUsage = TypeUsage.CreateDefaultTypeUsage(RowType.Create(
-                Enumerable.Repeat(EdmProperty.Create(nameof(Product.Name), stringTypeUsage), 1),
+                EnumerableEx.Return(EdmProperty.Create(nameof(Product.Name), stringTypeUsage)),
                 Enumerable.Empty<MetadataProperty>()));
             TypeUsage productTypeUsage = TypeUsage.CreateDefaultTypeUsage(metadata
                 .GetType(nameof(Product), "CodeFirstDatabaseSchema", DataSpace.SSpace));
@@ -217,7 +217,7 @@
                 .GetPrimitiveTypes(DataSpace.CSpace)
                 .Single(type => type.ClrEquivalentType == typeof(string)));
             TypeUsage nameRowTypeUsage = TypeUsage.CreateDefaultTypeUsage(RowType.Create(
-                Enumerable.Repeat(EdmProperty.Create(nameof(Product.Name), stringTypeUsage), 1),
+                EnumerableEx.Return(EdmProperty.Create(nameof(Product.Name), stringTypeUsage)),
                 Enumerable.Empty<MetadataProperty>()));
             TypeUsage productTypeUsage = TypeUsage.CreateDefaultTypeUsage(metadata
                 .GetType(nameof(Product), "CodeFirstDatabaseSchema", DataSpace.SSpace));
@@ -512,6 +512,18 @@
             return databaseExpression.WriteLine();
         }
 
+        internal static void WhereAndSelectQuery(AdventureWorks adventureWorks)
+        {
+            IQueryable<string> products = adventureWorks.Products
+               .Where(product => product.Name.Length > 10)
+               .Select(product => product.Name);
+            // Equivalent to:
+            // IQueryable<string> products =
+            //    from product in adventureWorks.Products
+            //    where product.Name.Length > 10
+            //    select product.Name;
+        }
+
         internal static void CompileWhereAndSelectExpressions(AdventureWorks adventureWorks)
         {
             Expression linqExpression = adventureWorks.Products
@@ -558,6 +570,13 @@
                 adventureWorks.Compile(linqExpression);
             compilation.DatabaseExpression.WriteLine();
             compilation.Parameters.WriteLines(parameter => $"{parameter.Key}: {parameter.Value}");
+        }
+
+        internal static void SelectAndFirstQuery(AdventureWorks adventureWorks)
+        {
+            string first = adventureWorks.Products.Select(product => product.Name).First();
+            // Equivalent to:
+            // string first = (from product in adventureWorks.Products select product.Name).First();
         }
 
         internal static SelectExpression SelectAndFirstDatabaseExpressions(AdventureWorks adventureWorks)
@@ -710,10 +729,6 @@
 
         internal static void WhereAndSelectWithCustomPredicate(AdventureWorks adventureWorks)
         {
-            //var q = adventureWorks.Products.Skip(1).Take(2);
-            //var compile = adventureWorks.Compile(q.Expression);
-            //var sql = adventureWorks.Generate(compile.Item1, compile.Item2);
-            //var r = adventureWorks.MaterializeEntity<Product>(sql, compile.Item2);
             IQueryable<Product> source = adventureWorks.Products;
             IQueryable<string> products = source
                 .Where(product => FilterName(product.Name))
@@ -874,6 +889,8 @@ namespace Microsoft.EntityFrameworkCore.Query.Expressions
         public virtual Expression Offset { get; set; } // OFFSET.
 
         public override Type Type { get; }
+
+        // Other members.
     }
 }
 
@@ -934,6 +951,8 @@ namespace System.Data.Common
         public DbParameterCollection Parameters { get; }
 
         public DbDataReader ExecuteReader();
+
+        // Other members.
     }
 }
 
@@ -1021,7 +1040,7 @@ namespace System.Linq
             return source.Provider.Execute<TSource>(firstCallExpression);
         }
 
-        // Other methods...
+        // Other members.
     }
 }
 
@@ -1086,7 +1105,7 @@ namespace System.Data.Entity.Core.Common.CommandTrees.ExpressionBuilder
 
         public static DbConstantExpression Constant(object value);
 
-        // Other methods...
+        // Other members.
     }
 }
 
@@ -1098,10 +1117,14 @@ namespace System.Data.Entity.Core.Common.CommandTrees
     public abstract class DbCommandTree
     {
         public IEnumerable<KeyValuePair<string, TypeUsage>> Parameters { get; }
+
+        // Other members.
     }
     public sealed class DbQueryCommandTree : DbCommandTree
     {
         public DbExpression Query { get; }
+
+        // Other members.
     }
 }
 
@@ -1123,7 +1146,7 @@ namespace System.Data.Entity.Core.Common.CommandTrees
 
         public abstract TResultType Visit(DbConstantExpression expression);
 
-        // Other methods.
+        // Other members.
     }
 }
 
@@ -1132,9 +1155,7 @@ namespace System.Data.Entity.SqlServer.SqlGen
     using System.Collections.Generic;
     using System.Data.Entity.Core.Common.CommandTrees;
 
-    internal interface ISqlFragment
-    {
-    }
+    internal interface ISqlFragment { }
 
     internal class SqlGenerator : DbExpressionVisitor<ISqlFragment>
     {

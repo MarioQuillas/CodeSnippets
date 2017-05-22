@@ -67,10 +67,22 @@ namespace Tutorial.LinqToObjects
         {
             IEnumerable<Type> source = CoreLibrary.GetExportedTypes();
             IEnumerable<string> obsoleteMembers =
-                from type in CoreLibrary.GetExportedTypes()
+                from type in source
                 from member in type.GetDeclaredMembers()
                 where member.IsObsolete()
-                select $"{type} - {member}";
+                select $"{type}:{member}";
+        }
+
+        internal static void SelectManyWithResultSelectorAndSubquery()
+        {
+            IEnumerable<Type> source = CoreLibrary.GetExportedTypes();
+            IEnumerable<string> obsoleteMembers =
+                from type in source
+                from obsoleteMember in (from member in type.GetDeclaredMembers()
+                                        where member.IsObsolete()
+                                        select member)
+                select $"{type}:{obsoleteMember}"; // Define query.
+            obsoleteMembers.WriteLines(); // Execute query.
         }
 
         internal static void GroupBy()
@@ -331,9 +343,9 @@ namespace Tutorial.LinqToObjects
             using (TfsTeamProjectCollection projectCollection = new TfsTeamProjectCollection(
                 new Uri("https://dixin.visualstudio.com/DefaultCollection"), credentials))
             {
-                const string wiql = "SELECT * FROM WorkItems WHERE [Work Item Type] = 'Bug' AND State != 'Closed'"; // WIQL does not support GROUP BY.
+                const string Wiql = "SELECT * FROM WorkItems WHERE [Work Item Type] = 'Bug' AND State != 'Closed'"; // WIQL does not support GROUP BY.
                 WorkItemStore workItemStore = (WorkItemStore)projectCollection.GetService(typeof(WorkItemStore));
-                WorkItemCollection workItems = workItemStore.Query(wiql);
+                WorkItemCollection workItems = workItemStore.Query(Wiql);
 
                 IEnumerable<IGrouping<string, WorkItem>> workItemGroups =
                     from WorkItem workItem in workItems // Cast.
@@ -349,7 +361,7 @@ namespace Tutorial.LinqToObjects
             // ResourceSet implements IEnumerable.
             ResourceSet resourceSet = new ResourceManager(typeof(Resources))
                 .GetResourceSet(CultureInfo.CurrentCulture, createIfNotExists: true, tryParents: true);
-            IEnumerable<DictionaryEntry> entries1 = 
+            IEnumerable<DictionaryEntry> entries1 =
                 from DictionaryEntry entry in resourceSet
                 select entry;
 
@@ -358,7 +370,7 @@ namespace Tutorial.LinqToObjects
             using (Stream stream = assembly.GetManifestResourceStream(assembly.GetManifestResourceNames()[0]))
             using (ResourceReader resourceReader = new ResourceReader(stream))
             {
-                IEnumerable<DictionaryEntry> entries2 = 
+                IEnumerable<DictionaryEntry> entries2 =
                     from DictionaryEntry entry in resourceReader
                     select entry;
             }

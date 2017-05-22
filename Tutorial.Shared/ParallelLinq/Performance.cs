@@ -4,7 +4,6 @@
     using System;
     using System.IO;
     using System.Linq;
-    using System.Net.Http;
     using System.Reflection;
     using System.Threading;
     using System.Xml.Linq;
@@ -12,7 +11,6 @@
     using Microsoft.ConcurrencyVisualizer.Instrumentation;
 
     using static Functions;
-    using static Tutorial.LinqToObjects.EnumerableX;
     using static Tutorial.LinqToXml.Modeling;
 
     using EnumerableX = Tutorial.LinqToObjects.EnumerableX;
@@ -21,13 +19,11 @@
     using System;
     using System.IO;
     using System.Linq;
-    using System.Net.Http;
     using System.Reflection;
     using System.Threading;
     using System.Xml.Linq;
 
     using static Functions;
-    using static Tutorial.LinqToObjects.EnumerableX;
     using static Tutorial.LinqToXml.Modeling;
 
     using EnumerableX = Tutorial.LinqToObjects.EnumerableX;
@@ -36,9 +32,9 @@
 
     internal static partial class Performance
     {
-        private static void OrderByTest(int count, int run, Func<int, int> keySelector)
+        private static void OrderByTest(Func<int, int> keySelector, int count, int run)
         {
-            int[] source = EnumerableX.RandomInt32().Take(count).ToArray();
+            int[] source = EnumerableX.RandomInt32(count: count).ToArray();
             Stopwatch stopwatch = Stopwatch.StartNew();
             Enumerable.Range(0, run).ForEach(_ =>
             {
@@ -59,13 +55,30 @@
 
     internal static partial class Performance
     {
-        internal static void RunOrderByTest()
+        internal static void OrderByTestForCount()
         {
-            OrderByTest(5, 10_000, value => value);    // Sequential:11    Parallel:1422
-            OrderByTest(5_000, 100, value => value);   // Sequential:114   Parallel:107
-            OrderByTest(500_000, 100, value => value); // Sequential:18210 Parallel:8204
+            OrderByTest(keySelector: value => value, count: 5, run: 10_000);    
+            // Sequential:11    Parallel:1422
+            OrderByTest(keySelector: value => value, count: 5_000, run: 100);
+            // Sequential:114   Parallel:107
+            OrderByTest(keySelector: value => value, count: 500_000, run: 100);
+            // Sequential:18210 Parallel:8204
+        }
 
-            OrderByTest(Environment.ProcessorCount, 10, value => value + Compute()); // Sequential:1605  Parallel:737
+        internal static void OrderByTestForKeySelector()
+        {
+            OrderByTest(
+                keySelector: value => value + ComputingWorkload(iteration: 1), 
+                count: Environment.ProcessorCount, run: 100_000);
+            // Sequential:37   Parallel:2218
+            OrderByTest(
+                keySelector: value => value + ComputingWorkload(iteration: 10_100), 
+                count: Environment.ProcessorCount, run: 1_000);
+            // Sequential:115  Parallel:125
+            OrderByTest(
+                keySelector: value => value + ComputingWorkload(iteration: 100_000), 
+                count: Environment.ProcessorCount, run: 100);
+            // Sequential:1240 Parallel:555
         }
     }
 
@@ -73,11 +86,11 @@
     {
         private static void DownloadTest(string[] uris)
         {
-            uris.Visualize(uri => Functions.Download(uri)); // Sequential with no concurrency.
+            uris.Visualize(uri => Download(uri)); // Sequential with no concurrency.
 
             uris.AsParallel()
                 .WithDegreeOfParallelism(10) // Parallel with max concurrency.
-                .Visualize(uri => Functions.Download(uri));
+                .Visualize(uri => Download(uri));
 
             using (Markers.EnterSpan(-3, nameof(ParallelEnumerableX.ForceParallel)))
             {
@@ -87,7 +100,7 @@
                     {
                         using (markerSeries.EnterSpan(Thread.CurrentThread.ManagedThreadId, uri))
                         {
-                            Functions.Download(uri);
+                            Download(uri);
                         }
                     },
                     forcedDegreeOfParallelism: 10); // Parallel with forced concurrency.

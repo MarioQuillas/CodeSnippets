@@ -89,9 +89,7 @@
         {
             if (this.State == IteratorState.Error || this.State == IteratorState.MoveNext)
             {
-                try
-                {
-                }
+                try { }
                 finally
                 {
                     // Unexecuted finally blocks are executed before the thread is aborted.
@@ -191,9 +189,7 @@
         {
             if (this.State == IteratorState.Error || this.State == IteratorState.MoveNext)
             {
-                try
-                {
-                }
+                try { }
                 finally
                 {
                     // Unexecuted finally blocks are executed before the thread is aborted.
@@ -212,7 +208,7 @@
 
         private readonly Func<TData, Iterator<T>> iteratorFactory;
 
-        public Sequence(Func<TData, Iterator<T>> iteratorFactory, TData data = default(TData))
+        public Sequence(TData data, Func<TData, Iterator<T>> iteratorFactory)
         {
             this.data = data;
             this.iteratorFactory = iteratorFactory;
@@ -224,9 +220,7 @@
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
     }
 
-    public interface IGenerator<out T> : IEnumerable<T>, IEnumerator<T>
-    {
-    }
+    public interface IGenerator<out T> : IEnumerable<T>, IEnumerator<T> { }
 
     public class Generator<T, TData> : IGenerator<T>
     {
@@ -236,39 +230,39 @@
 
         private readonly Func<TData, Iterator<T>> iteratorFactory;
 
-        private Iterator<T> iterator;
+        private readonly Iterator<T> initialIterator;
 
-        public Generator(Func<TData, Iterator<T>> iteratorFactory, TData data = default(TData))
+        public Generator(TData data, Func<TData, Iterator<T>> iteratorFactory)
         {
-            this.iteratorFactory = iteratorFactory;
             this.data = data;
-            this.iterator = iteratorFactory(data);
+            this.iteratorFactory = iteratorFactory;
+            this.initialIterator = iteratorFactory(data);
         }
 
         public IEnumerator<T> GetEnumerator()
         {
-            if (this.iterator.State == IteratorState.Create
-                && this.initialThreadId == Environment.CurrentManagedThreadId)
+            if (this.initialThreadId == Environment.CurrentManagedThreadId
+                && this.initialIterator.State == IteratorState.Create)
             {
-                // Where called by the same thread and iteration is not started, reuse the same iterator.
-                this.iterator.Start();
+                // When called by the same initial thread and iteration is not started, reuse self with initial iterator.
+                this.initialIterator.Start();
                 return this;
             }
-            // If the iteration is already started, or the iteration is requested from a different thread, return a new iterator.
-            Generator<T, TData> generator = new Generator<T, TData>(this.iteratorFactory, this.data);
-            generator.iterator.Start();
+            // If the iteration is already started, or the iteration is requested from a different thread, create new generator with new iterator.
+            Generator<T, TData> generator = new Generator<T, TData>(this.data, this.iteratorFactory);
+            generator.initialIterator.Start();
             return generator;
         }
 
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
-        public void Dispose() => this.iterator.Dispose();
+        public void Dispose() => this.initialIterator.Dispose();
 
-        public bool MoveNext() => this.iterator.MoveNext();
+        public bool MoveNext() => this.initialIterator.MoveNext();
 
-        public void Reset() => this.iterator.Reset();
+        public void Reset() => this.initialIterator.Reset();
 
-        public T Current => this.iterator.Current;
+        public T Current => this.initialIterator.Current;
 
         object IEnumerator.Current => this.Current;
     }
@@ -352,9 +346,7 @@
         {
             if (this.state == IteratorState.Error || this.state == IteratorState.MoveNext)
             {
-                try
-                {
-                }
+                try { }
                 finally
                 {
                     // https://msdn.microsoft.com/en-us/library/ty8d3wta.aspx
