@@ -1,0 +1,15 @@
+{
+  "name": "dixin.nodejs",
+  "version": "1.0.0",
+  "description": "Dixin.Nodejs",
+  "main": "main.js",
+  "author": {
+    "name": "Dixin"
+  },
+  "dependencies": {
+    "cheerio": "^0.22.0",
+    "oauth": "^0.9.15",
+    "q": "^1.5.0",
+    "tumblr.js": "^1.1.1"
+  }
+}
